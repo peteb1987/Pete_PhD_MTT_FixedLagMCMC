@@ -39,7 +39,7 @@ for t = 1:Par.T
     if t==1
         [Chains{t}, BestEsts{t}] = MCMCFrame(t, t, {InitChain}, InitEst, Observs);
     else
-%         [Chains{t}, BestEsts{t}] = MCMCFrame(t, min(t,Par.L), Chains(1:t), BestEsts{max(1,t-Par.S)}, Observs);
+%         [Chains{t}, BestEsts{t}] = MCMCFrame(t, min(t,Par.L), Chains(1:t), BestEsts{max(1,t-Par.S)}.Copy, Observs);
         [Chains{t}, BestEsts{t}] = MCMCFrame(t, min(t,Par.L), Chains(1:t), BestEsts{t-1}.Copy, Observs);
     end
     
@@ -187,18 +187,6 @@ for ii = 2:Par.NumIt
             % Find origin posteriors
             new_origin_post = SingTargPosterior(j, t-sn, L-sn, NewOrigin, Observs);
             old_origin_post = SingTargPosterior(j, t-so, L-so, OldOrigin, Observs);
-%             new_origin_post = SingTargPosterior(j, t-sn, L-sn, NewOrigin, Observs);
-%             old_origin_post = SingTargPosterior(j, t-so, L-so, OldOrigin, Observs);
-
-            if ((t==6)&&(ii==155)) || ...
-                    ((t==7)&&(ii==159)) || ...
-                    ((t==8)&&(ii==254)) || ...
-                    ((t==9)&&(ii==16)) || ...
-                    ((t==10)&&(ii==2)) || ...
-                    ((t==11)&&(ii==11)) || ...
-                    ((t==12)&&(ii==42))
-                old_origin_post = old_origin_post;20000;
-            end
     
             % Reverse Kernel
             new_reverse_kernel = 0;

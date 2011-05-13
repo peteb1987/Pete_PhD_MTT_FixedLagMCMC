@@ -3,7 +3,7 @@
 global Par;
 
 % Set random seed
-Par.rand_seed = 0;
+Par.rand_seed = 3;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Flags                                                               %%%
