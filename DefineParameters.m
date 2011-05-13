@@ -79,7 +79,8 @@ end
 %%% Algorithm parameters                                                %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Par.L = 4;                              % Length of rolling window
+Par.L = 5;                              % Length of rolling window
+Par.S = 5;
 Par.NumIt = 500;                        % Number of iterations
 
 Par.BurnIn = floor(0.1*Par.NumIt);      % Length of burn-in

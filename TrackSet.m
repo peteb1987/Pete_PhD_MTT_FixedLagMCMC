@@ -7,6 +7,7 @@ classdef TrackSet < handle
         N               % Number of tracks
         members         % Track ids
         origin          % Index of particle in previous chain from which this is estimate is derived
+        origin_time     % The frame of the chain from which the estimate was originally proposed
         
     end
     
@@ -17,7 +18,6 @@ classdef TrackSet < handle
             obj.tracks = tracks;
             obj.N = length(tracks);
             obj.members = members;
-            obj.origin = [];
         end %Constructor
         
         % Copy
@@ -28,6 +28,7 @@ classdef TrackSet < handle
             end
             new = TrackSet(obj.members, t);
             new.origin = obj.origin;
+            new.origin_time = obj.origin_time;
         end
         
         

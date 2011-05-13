@@ -128,7 +128,7 @@ else
         indexes = find(test1&test2);
         test = false(1, length(ind));
         for i = indexes
-            test(i) = ((innov(:,i)'/S)*innov(:,i) < 16);
+            test(i) = ((innov(:,i)'/S)*innov(:,i) < 25);
         end
         validated = ind(test);
         
