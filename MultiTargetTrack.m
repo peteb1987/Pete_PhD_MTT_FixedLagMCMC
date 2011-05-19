@@ -189,7 +189,7 @@ for ii = 2:Par.NumIt
             
 %             sn = s;
             sn = unidrnd(s);
-            dn = s-1+unidrnd(L-s+1);
+            dn = sn-1+unidrnd(L-sn+1);
             
             k = t-sn;
             
@@ -223,8 +223,8 @@ for ii = 2:Par.NumIt
             end
 
             % Propose associations
-            new_ppsl = New.Sample(j, t, dn, Observs, false);
-            old_ppsl = Old.Sample(j, t, do, Observs, true);
+            new_ppsl = (1/(L-sn+1)) * New.Sample(j, t, dn, Observs, false);
+            old_ppsl = (1/(L-so+1)) * Old.Sample(j, t, do, Observs, true);
             
             % Find origin posteriors
             new_origin_post = SingTargPosterior(j, t-sn, L-sn, NewOrigin, Observs);
