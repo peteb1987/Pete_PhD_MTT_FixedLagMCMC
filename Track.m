@@ -152,7 +152,45 @@ classdef Track < handle
             end
             
         end
-
+        
+        
+        
+        % UpdatePart - update a non-final section of track
+        function UpdatePart(obj, t, NewTrack, assoc)
+            
+            % Updates track from t-L+1 to t.
+            % Can update states only or states and associations.
+            
+            L = length(NewTrack);
+            assert(isempty(assoc)||(length(assoc)==L), 'Association vector has incorrect length');
+            
+            % Set state and association for t-L+1 to t-1
+            for tt = t-L+1:t
+                k = tt-(t-L);
+                obj.SetState(tt, NewTrack{k})
+                if ~isempty(assoc)
+                    obj.SetAssoc(tt, assoc(k));
+                end
+            end
+            
+        end
+        
+        
+        
+        % CopyHistory - change states and assocs prior to and including t
+        % to those from another track
+        function CopyHistory(obj, t, Origin)
+            
+            or_cut_pt = Origin.Time(t);
+            des_cut_pt = obj.Time(t);
+            
+            obj.state = [ Origin.state(1:or_cut_pt); obj.state(des_cut_pt+1:end)];
+            obj.assoc = [ Origin.assoc(1:or_cut_pt); obj.assoc(des_cut_pt+1:end)];
+            
+            obj.birth = Origin.birth;
+            obj.num = obj.death - obj.birth;
+            
+        end
         
     end
     

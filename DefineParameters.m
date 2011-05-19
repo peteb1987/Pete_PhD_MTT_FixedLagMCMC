@@ -3,7 +3,7 @@
 global Par;
 
 % Set random seed
-Par.rand_seed = 3;
+Par.rand_seed = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Flags                                                               %%%
@@ -79,9 +79,9 @@ end
 %%% Algorithm parameters                                                %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Par.L = 5;                              % Length of rolling window
+Par.L = 7;                              % Length of rolling window
 Par.S = 5;
-Par.NumIt = 500;                        % Number of iterations
+Par.NumIt = 2000;                        % Number of iterations
 
 Par.BurnIn = floor(0.1*Par.NumIt);      % Length of burn-in
 

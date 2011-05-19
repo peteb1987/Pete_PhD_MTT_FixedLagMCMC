@@ -6,8 +6,8 @@ classdef TrackSet < handle
         tracks          % Cell array of track objects
         N               % Number of tracks
         members         % Track ids
-        origin          % Index of particle in previous chain from which this is estimate is derived
-        origin_time     % The frame of the chain from which the estimate was originally proposed
+        origin          % Index of particles in previous chain from which this is estimate is derived
+        origin_time     % The frame times of the chains from which the estimate was originally proposed
         
     end
     
@@ -81,6 +81,17 @@ classdef TrackSet < handle
         
         
         
+        % Sample - both associations and states
+        function ppsl_prob = Sample(obj, j, t, L, Observs, just_prob)
+            
+            assoc_prob = obj.SampleAssociations(j, t, L, Observs, just_prob);
+            state_prob = obj.SampleStates(j, t, L, Observs, just_prob);
+            ppsl_prob = assoc_prob + state_prob;
+            
+        end
+        
+        
+        
         % SampleStates - Propose changes to state and calculate
         % proposal probability
         function ppsl_prob = SampleStates(obj, j, t, L, Observs, just_prob)
@@ -139,6 +150,50 @@ classdef TrackSet < handle
             
         end
         
+        
+        
+        % SampleBridge - Sample a small bridging region between history and window
+        function ppsl_prob = SampleBridge(obj, j, t, L, b, Observs, just_prob)
+            
+            global Par;
+            
+            assoc_prob = SampleBridgeAssoc(obj, j, t, L, b, Observs, just_prob);
+            
+            NewTracks = cell(obj.N, 1);
+            
+            % Only need examine those which are present after t-L
+            if obj.tracks{j}.death > t-L+1
+                
+                % How long should the KF run for?
+                last = min(t-L+b, obj.tracks{j}.death - 1);
+                first = max(t-L+1, obj.tracks{j}.birth+1);
+                num = last - first + 1;
+                
+                % Draw up a list of associated hypotheses
+                obs = ListAssocObservs(last, num, obj.tracks{j}, Observs);
+                
+                % Run a Kalman filter the target
+                [KFMean, KFVar] = KalmanSmoother(obs, obj.tracks{j}.GetState(first-1), Par.KFInitVar*eye(4), obj.tracks{j}.GetState(last+1));
+                
+                % Sample Kalman filter
+                if ~just_prob
+                    [NewTracks{j}, state_prob] = SampleKalman(KFMean, KFVar);
+                else
+                    track = obj.tracks{j}.Copy;
+                    track.state(t-L+b+2:end) = [];  %%% FUDGE-Y IMPLEMENTATION - ASSUMES BIRTH = 0
+                    [NewTracks{j}, state_prob] = SampleKalman(KFMean, KFVar, track);
+                end
+                
+                if ~just_prob
+                    % Update distribution
+                    obj.tracks{j}.UpdatePart(last, NewTracks{j}, []);
+                end
+                
+            end
+            
+            ppsl_prob = sum(assoc_prob) + sum(state_prob);
+            
+        end
         
         
         %SampleSearchAssociations - As above, but for the search track

@@ -12,6 +12,7 @@ if ~Par.FLAG_InitTargs
     
     % No knowledge of target starting positions
     tracks = cell(0,1);
+    InitEst = TrackSet(1:size(InitState, 2), tracks);
     
 else
     
@@ -20,12 +21,12 @@ else
     for j = 1:size(InitState, 2)
         tracks{j} = Track(0, 1, InitState(j), 0);
     end
+    InitEst = TrackSet(1:size(InitState, 2), tracks);
+    InitEst.origin = ones(Par.NumTgts);
+    InitEst.origin_time = ones(Par.NumTgts);
     
 end
 
-InitEst = TrackSet(1:size(InitState, 2), tracks);
-InitEst.origin = 1;
-InitEst.origin_time = 1;
 InitChain = Chain(1, InitEst.Copy);
 
 % Loop through time
@@ -86,6 +87,7 @@ function [MC, BestEst] = MCMCFrame(t, L, PrevChains, PrevBest, Observs)
 global Par;
 
 s = min(t,Par.S);
+b = 2;
 
 PrevBest.ProjectTracks(t);
 % for tt = t-s+1:t
@@ -94,7 +96,7 @@ PrevBest.ProjectTracks(t);
 
 MC = Chain(Par.NumIt, PrevBest);
 
-accept = zeros(2,1);
+accept = zeros(4,1);
 
 % Loop through iterations
 for ii = 2:Par.NumIt
@@ -107,11 +109,11 @@ for ii = 2:Par.NumIt
     
     % Randomly select move type
     if t > Par.L
-        type_weights = [1 1];
+        type_weights = [2 1 1 1];
     else
-        type_weights = [1 0];
+        type_weights = [1 0 0 0];
     end
-    type = randsample(1:2, 1, true, type_weights);
+    type = randsample(1:length(type_weights), 1, true, type_weights);
     
     % Switch on move type
     switch type
@@ -121,20 +123,10 @@ for ii = 2:Par.NumIt
             % Choose proposal start-point
             d = unidrnd(L);
 %             d = L;
-%             if t<Par.L
-%                 d = L;
-%             end
             
-            % Propose associations
-            new_assoc_ppsl = New.SampleAssociations(j, t, d, Observs, false);
-            old_assoc_ppsl = Old.SampleAssociations(j, t, d, Observs, true);
-            
-            % Propose states
-            new_state_ppsl = New.SampleStates(j, t, d, Observs, false);
-            old_state_ppsl = Old.SampleStates(j, t, d, Observs, true);
-            
-            old_ppsl = old_state_ppsl + old_assoc_ppsl;
-            new_ppsl = new_state_ppsl + new_assoc_ppsl;
+            % Sample proposal
+            new_ppsl = New.Sample(j, t, d, Observs, false);
+            old_ppsl = Old.Sample(j, t, d, Observs, true);
             
             % Reverse Kernel
             new_reverse_kernel = 0;
@@ -143,10 +135,11 @@ for ii = 2:Par.NumIt
             old_origin_post = 0;
             new_origin_post = 0;
             
+            
         case 2 % Single target, history and window - assumes independence for frames <= t-L
             
-            sn = s;
-%             sn = unidrnd(s);
+%             sn = s;
+            sn = unidrnd(s);
             k = t-sn;
             
             % Propose a new origin and copy it
@@ -156,54 +149,143 @@ for ii = 2:Par.NumIt
             for tt = t-sn+1:t
                 New.tracks{j}.Extend(tt, zeros(4,1), 0);
             end
-            New.origin = new_part;
-            New.origin_time = t-sn;
+            New.origin(j) = new_part;
+            New.origin_time(j) = t-sn;
             
             % Generate origin states
-            so = t - Old.origin_time;
+            so = t - Old.origin_time(j);
             
             OldOrigin = Old.Copy;
-            OldOrigin.tracks{j} = PrevChains{Old.origin_time}.particles{Old.origin}.tracks{j}.Copy;
-            
-            % Propose associations
-            new_assoc_ppsl = New.SampleAssociations(j, t, sn, Observs, false);
-            old_assoc_ppsl = Old.SampleAssociations(j, t, so, Observs, true);
-            
-            % Propose states
-            new_state_ppsl = New.SampleStates(j, t, sn, Observs, false);
-            old_state_ppsl = Old.SampleStates(j, t, so, Observs, true);
+            OldOrigin.tracks{j} = PrevChains{Old.origin_time(j)}.particles{Old.origin(j)}.tracks{j}.Copy;
             
 %             % Propose associations
-%             new_assoc_ppsl = New.SampleAssociations(j, t, L, Observs, false);
-%             old_assoc_ppsl = Old.SampleAssociations(j, t, L, Observs, true);
-%             
-%             % Propose states
-%             new_state_ppsl = New.SampleStates(j, t, L, Observs, false);
-%             old_state_ppsl = Old.SampleStates(j, t, L, Observs, true);
+%             new_ppsl = New.Sample(j, t, sn, Observs, false);
+%             old_ppsl = Old.Sample(j, t, so, Observs, true);
             
-            old_ppsl = old_state_ppsl + old_assoc_ppsl;
-            new_ppsl = new_state_ppsl + new_assoc_ppsl;
+            % Propose associations
+            new_ppsl = New.Sample(j, t, L, Observs, false);
+            old_ppsl = Old.Sample(j, t, L, Observs, true);
             
             % Find origin posteriors
             new_origin_post = SingTargPosterior(j, t-sn, L-sn, NewOrigin, Observs);
             old_origin_post = SingTargPosterior(j, t-so, L-so, OldOrigin, Observs);
     
             % Reverse Kernel
-            new_reverse_kernel = 0;
-            old_reverse_kernel = 0;
-%             if (t > sn) && (sn < L)
-%                 new_reverse_kernel = NewOrigin.SampleAssociations(j, t-sn, L-sn, Observs, true);
-%                 new_reverse_kernel = new_reverse_kernel + NewOrigin.SampleStates(j, t-sn, L-sn, Observs, true);
-%             else
-%                 new_reverse_kernel = 0;
-%             end
-%             if (t > so) && (so < L)
-%                 old_reverse_kernel = OldOrigin.SampleAssociations(j, t-so, L-so, Observs, true);
-%                 old_reverse_kernel = old_reverse_kernel + OldOrigin.SampleStates(j, t-so, L-so, Observs, true);
-%             else
-%                 old_reverse_kernel = 0;
-%             end
+%             new_reverse_kernel = 0;
+%             old_reverse_kernel = 0;
+            if (t > sn) && (sn < L)
+                new_reverse_kernel = NewOrigin.Sample(j, t-sn, L-sn, Observs, true);
+            else
+                new_reverse_kernel = 0;
+            end
+            if (t > so) && (so < L)
+                old_reverse_kernel = OldOrigin.Sample(j, t-so, L-so, Observs, true);
+            else
+                old_reverse_kernel = 0;
+            end
             
+            
+        case 3 % Single target, history and window, keeping within-window history - assumes independence for frames <= t-L
+            
+%             sn = s;
+            sn = unidrnd(s);
+            dn = s-1+unidrnd(L-s+1);
+            
+            k = t-sn;
+            
+            % Propose a new origin and copy it
+            new_part = unidrnd(size(PrevChains{k}.particles, 1));
+            New.tracks{j} = PrevChains{k}.particles{new_part}.tracks{j}.Copy;
+            NewOrigin = New.Copy;
+            for tt = t-sn+1:t
+                New.tracks{j}.Extend(tt, zeros(4,1), 0);
+            end
+            New.origin(j) = new_part;
+            New.origin_time(j) = t-sn;
+            
+            % Generate origin states
+            so = t - Old.origin_time(j);
+            
+            OldOrigin = Old.Copy;
+            OldOrigin.tracks{j} = PrevChains{Old.origin_time(j)}.particles{Old.origin(j)}.tracks{j}.Copy;
+            
+%             % Propose associations
+%             new_ppsl = New.Sample(j, t, sn, Observs, false);
+%             old_ppsl = Old.Sample(j, t, so, Observs, true);
+
+            % Work out do - the number of frames over which Old and OldOrigin differ
+            for do = 1:L
+                if OldOrigin.tracks{j}.Present(t-do)
+                    if OldOrigin.tracks{j}.GetState(t-do) == Old.tracks{j}.GetState(t-do)
+                        break
+                    end
+                end
+            end
+
+            % Propose associations
+            new_ppsl = New.Sample(j, t, dn, Observs, false);
+            old_ppsl = Old.Sample(j, t, do, Observs, true);
+            
+            % Find origin posteriors
+            new_origin_post = SingTargPosterior(j, t-sn, L-sn, NewOrigin, Observs);
+            old_origin_post = SingTargPosterior(j, t-so, L-so, OldOrigin, Observs);
+    
+            % Reverse Kernel
+%             new_reverse_kernel = 0;
+%             old_reverse_kernel = 0;
+            if (t > sn) && (sn < L)
+                new_reverse_kernel = NewOrigin.Sample(j, t-sn, L-sn, Observs, true);
+            else
+                new_reverse_kernel = 0;
+            end
+            if (t > so) && (so < L)
+                old_reverse_kernel = OldOrigin.Sample(j, t-so, L-so, Observs, true);
+            else
+                old_reverse_kernel = 0;
+            end
+            
+            
+        case 4 % Single target, history and bridging region - assumes independence for frames <= t-L
+            
+%             sn = s;
+            sn = unidrnd(s);
+            k = t-sn;
+            
+            % Propose a new origin and copy it
+            new_part = unidrnd(size(PrevChains{k}.particles, 1));
+            NewOrigin = New.Copy;
+            New.tracks{j}.CopyHistory(t-L, PrevChains{k}.particles{new_part}.tracks{j});
+            NewOrigin.tracks{j} = PrevChains{k}.particles{new_part}.tracks{j}.Copy;
+            New.origin(j) = new_part;
+            New.origin_time(j) = t-sn;
+            
+            % Generate origin states
+            so = t - Old.origin_time(j);
+            OldOrigin = Old.Copy;
+            OldOrigin.tracks{j} = PrevChains{Old.origin_time(j)}.particles{Old.origin(j)}.tracks{j}.Copy;
+
+            % Find origin posteriors
+            new_origin_post = SingTargPosterior(j, t-sn, L-sn, NewOrigin, Observs);
+            old_origin_post = SingTargPosterior(j, t-so, L-so, OldOrigin, Observs);
+    
+            % Reverse Kernel
+%             new_reverse_kernel = 0;
+%             old_reverse_kernel = 0;
+            if (t > sn) && (sn < L)
+                new_reverse_kernel = NewOrigin.Sample(j, t-sn, L-sn, Observs, true);
+            else
+                new_reverse_kernel = 0;
+            end
+            if (t > so) && (so < L)
+                old_reverse_kernel = OldOrigin.Sample(j, t-so, L-so, Observs, true);
+            else
+                old_reverse_kernel = 0;
+            end
+            
+            % Propose associations
+            new_ppsl = New.SampleBridge(j, t, L, b, Observs, false);
+            old_ppsl = Old.SampleBridge(j, t, L, b, Observs, true);
+
     end
     
     % Calculate posteriors
@@ -230,11 +312,13 @@ end
 % Pick the best particle
 best_ind = find(MC.posteriors==max(MC.posteriors), 1);
 BestEst = MC.particles{best_ind}.Copy;
-BestEst.origin = best_ind;
-BestEst.origin_time = t;
+BestEst.origin(:) = best_ind;
+BestEst.origin_time(:) = t;
 
 disp(['*** Accepted ' num2str(accept(1)) ' fixed-history single target moves in this frame']);
 disp(['*** Accepted ' num2str(accept(2)) ' full single target moves in this frame']);
+disp(['*** Accepted ' num2str(accept(3)) ' full with preserved window-history single target moves in this frame']);
+disp(['*** Accepted ' num2str(accept(4)) ' bridging-history single target moves in this frame']);
 
 end
 
