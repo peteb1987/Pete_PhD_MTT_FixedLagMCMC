@@ -14,7 +14,7 @@ RandStream.setDefaultStream(s);
 % Specify target behaviour
 TargSpec = SpecifyTargetBehaviour;
 
-for i=1:4
+for i=1:5-Par.NumTgts
     [~]=unidrnd(50);
     [~] = unifrnd(0.15*Par.Xmax, 0.25*Par.Xmax);
     [~] = unifrnd(-pi, pi);
@@ -36,7 +36,7 @@ PlotObs(Observs, detections);
 [ Chains ] = MultiTargetTrack(detections, Observs, {TargSpec(:).state} );
 
 % Plot final estimates
-PlotTracks(Chains{50}, fig);
+PlotTracks(Chains{Par.T}, fig);
 
 % Analyse associations
 [ass, count, present] = AnalyseAss( detections, Chains{Par.T}, Par.T);

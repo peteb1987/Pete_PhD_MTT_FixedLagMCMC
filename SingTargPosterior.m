@@ -20,7 +20,10 @@ for tt = start_time:end_time
     obs_assigned = [];
     for jj = 1:Set.N
         if j ~= jj
-            obs_assigned = [obs_assigned, Set.tracks{jj}.GetAssoc(tt)];
+            ass = Set.tracks{jj}.GetAssoc(tt);
+            if ass > 0
+                obs_assigned = [obs_assigned, Set.tracks{jj}.GetAssoc(tt)];
+            end
         end
     end
     

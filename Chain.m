@@ -13,9 +13,13 @@ classdef Chain
         
         % Constructor
         function obj = Chain(chain_len, init)
+            blank = TrackSet([], {});
             obj.particles = cell(chain_len, 1);
+            for ii=1:chain_len
+                obj.particles{ii} = blank;
+            end
             obj.particles{1} = init;
-            obj.posteriors = -inf*ones(chain_len, 1);
+            obj.posteriors = -inf*ones(chain_len, init.N);
             obj.orders = zeros(chain_len, 1);
             obj.origins = zeros(chain_len, 1);
         end %Constructor

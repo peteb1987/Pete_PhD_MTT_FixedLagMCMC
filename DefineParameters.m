@@ -39,7 +39,7 @@ end
 %%% Scenario parameters                                                 %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Par.NumTgts = 1;
+Par.NumTgts = 5;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Target dynamic model parameters                                     %%%
@@ -80,8 +80,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Par.L = 7;                              % Length of rolling window
-Par.S = 5;
-Par.NumIt = 2000;                        % Number of iterations
+Par.S = 5;                              % Max distance previously from which particles are sampled
+Par.NumIt = 2500;                        % Number of iterations
 
 Par.BurnIn = floor(0.1*Par.NumIt);      % Length of burn-in
 
