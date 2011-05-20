@@ -82,6 +82,7 @@ end
 Par.L = 7;                              % Length of rolling window
 Par.S = 5;                              % Max distance previously from which particles are sampled
 Par.NumIt = 2500;                        % Number of iterations
+Par.Restart = 10000;
 
 Par.BurnIn = floor(0.1*Par.NumIt);      % Length of burn-in
 

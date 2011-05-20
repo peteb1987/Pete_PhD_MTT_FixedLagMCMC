@@ -128,6 +128,28 @@ for ii = 2:Par.NumIt
     reverse_kernel_store(ii,:) = reverse_kernel_store(ii-1,:);
     origin_post_store(ii,:) = origin_post_store(ii-1,:);
     
+    % Restart chain if required
+    if (mod(ii, Par.Restart)==1) && (ii > 1)
+        
+        k = max(1,t-1);
+        weights = exp(sum(PrevChains{max(1,t-1)}.posteriors, 2));
+        weights = weights / sum(weights);
+        new_part = randsample(size(PrevChains{k}.particles, 1), 1, true, weights);
+        Old = PrevChains{k}.particles{new_part}.Copy;
+        Old.ProjectTracks(t);
+        MC.particles{ii-1} = Old.Copy;
+        New = Old.Copy;
+        
+        for j = 1:Par.NumTgts
+            MC.posteriors(ii-1, j) = -inf;
+            MC.posteriors(ii, j) = -inf;
+            posterior_store(ii-1, j) = SingTargPosterior(j, t, L, New, Observs);
+            reverse_kernel_store(ii-1, j) = New.Sample(j, t-1, L-1, Observs, true);
+            origin_post_store(ii-1, j) = SingTargPosterior(j, t-1, L-1, New, Observs);
+        end
+        
+    end
+    
     % Randomly choose target
 %     j = unidrnd(New.N);
     j = mod(ii, New.N)+1;
